@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DSCI 551 – Clinical Records System</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .slide {
+    display: none;
+    width: 900px;
+    min-height: 520px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 52px 60px;
+    position: relative;
+    animation: fadeIn 0.3s ease;
+  }
+  .slide.active { display: flex; flex-direction: column; justify-content: center; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .slide-num {
+    position: absolute;
+    top: 18px; right: 24px;
+    font-size: 12px;
+    color: #8b949e;
+  }
+
+  .tag {
+    display: inline-block;
+    background: #1f6feb22;
+    border: 1px solid #1f6feb66;
+    color: #58a6ff;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 18px;
+  }
+
+  h1 { font-size: 32px; font-weight: 700; line-height: 1.25; color: #f0f6fc; margin-bottom: 10px; }
+  h2 { font-size: 26px; font-weight: 700; color: #f0f6fc; margin-bottom: 18px; }
+  h3 { font-size: 16px; font-weight: 600; color: #58a6ff; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .subtitle { font-size: 16px; color: #8b949e; margin-bottom: 28px; }
+  .authors  { font-size: 15px; color: #58a6ff; font-weight: 600; }
+  .course   { font-size: 13px; color: #8b949e; margin-top: 4px; }
+
+  p  { font-size: 15px; color: #c9d1d9; line-height: 1.7; margin-bottom: 10px; }
+  ul { padding-left: 20px; }
+  li { font-size: 15px; color: #c9d1d9; line-height: 1.8; }
+  li::marker { color: #58a6ff; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 8px; }
+  .cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 8px; }
+
+  .card {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 18px 20px;
+  }
+  .card h3 { font-size: 13px; margin-bottom: 6px; }
+  .card p, .card li { font-size: 13px; }
+
+  .code {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #79c0ff;
+    margin: 12px 0;
+    white-space: pre;
+  }
+
+  .highlight { color: #ffa657; font-weight: 600; }
+  .green     { color: #56d364; }
+  .blue      { color: #58a6ff; }
+  .yellow    { color: #e3b341; }
+  .red       { color: #f85149; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 6px;
+  }
+  .badge-green  { background: #56d36422; color: #56d364; border: 1px solid #56d36444; }
+  .badge-blue   { background: #58a6ff22; color: #58a6ff; border: 1px solid #58a6ff44; }
+  .badge-yellow { background: #e3b34122; color: #e3b341; border: 1px solid #e3b34144; }
+
+  .arrow { color: #8b949e; font-size: 20px; margin: 0 6px; }
+
+  .schema {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+  }
+  .entity {
+    background: #1f6feb22;
+    border: 1px solid #1f6feb66;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #58a6ff;
+    text-align: center;
+  }
+  .entity small { display: block; font-size: 10px; color: #8b949e; font-weight: 400; margin-top: 2px; }
+
+  .explain-box {
+    background: #0d1117;
+    border-left: 3px solid #238636;
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 10px 0;
+    font-family: monospace;
+    font-size: 12px;
+    color: #56d364;
+  }
+  .explain-box .dim { color: #8b949e; }
+
+  .nav {
+    margin-top: 28px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .nav button {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 8px 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .nav button:hover { background: #30363d; }
+  .nav .hint { font-size: 12px; color: #8b949e; }
+
+  .divider { height: 1px; background: #30363d; margin: 20px 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  th { text-align: left; padding: 8px 12px; color: #58a6ff; border-bottom: 1px solid #30363d; font-size: 12px; text-transform: uppercase; }
+  td { padding: 8px 12px; color: #c9d1d9; border-bottom: 1px solid #21262d; }
+  tr:last-child td { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ SLIDE 1 – Title ══════════════════ -->
+<div class="slide active" id="s1">
+  <div class="slide-num">1 / 12</div>
+  <div class="tag">DSCI 551 · Spring 2026</div>
+  <h1>Clinical Diagnosis &amp;<br/>Treatment Records System</h1>
+  <p class="subtitle">Exploring PostgreSQL Internals: B-Tree Indexing &amp; MVCC</p>
+  <div class="divider"></div>
+  <div class="authors">Diana Rulanova &nbsp;·&nbsp; Eliza Loke</div>
+  <div class="course">University of Southern California &nbsp;·&nbsp; DSCI 551 Data Management</div>
+</div>
+
+<!-- ══════════════════ SLIDE 2 – Motivation ══════════════════ -->
+<div class="slide" id="s2">
+  <div class="slide-num">2 / 12</div>
+  <div class="tag">Introduction</div>
+  <h2>Motivation &amp; Goals</h2>
+  <div class="cols">
+    <div>
+      <h3>Why PostgreSQL?</h3>
+      <ul>
+        <li>Mature, production-grade RDBMS</li>
+        <li>Rich support for indexing &amp; transactions</li>
+        <li>Observable internals via <span class="blue">EXPLAIN ANALYZE</span></li>
+        <li>MVCC built into the core engine</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Project Goals</h3>
+      <ul>
+        <li>Analyze B-tree index behavior in real queries</li>
+        <li>Demonstrate MVCC &amp; row-level locking</li>
+        <li>Map each app operation to a DB internal</li>
+        <li>Show measurable performance differences</li>
+      </ul>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <p><span class="highlight">Domain:</span> Healthcare — patients, providers, encounters, diagnoses, treatments. A realistic setting where correctness and concurrency both matter.</p>
+</div>
+
+<!-- ══════════════════ SLIDE 3 – Schema ══════════════════ -->
+<div class="slide" id="s3">
+  <div class="slide-num">3 / 12</div>
+  <div class="tag">Application Design</div>
+  <h2>Database Schema</h2>
+  <div class="schema">
+    <div class="entity">PATIENTS<small>patient_id PK<br/>full_name · dob · contact</small></div>
+    <span class="arrow">──►</span>
+    <div class="entity">ENCOUNTERS<small>encounter_id PK<br/>patient_id FK · provider_id FK<br/>encounter_date · complaint</small></div>
+    <span class="arrow">──►</span>
+    <div class="entity">DIAGNOSES<small>diagnosis_id PK<br/>encounter_id FK<br/>diagnosis_code · description</small></div>
+    <span class="arrow">──►</span>
+    <div class="entity">TREATMENTS<small>treatment_id PK<br/>diagnosis_id FK<br/>treatment_plan · outcome</small></div>
+  </div>
+  <div class="entity" style="margin-bottom:16px; width:160px;">PROVIDERS<small>provider_id PK<br/>full_name · specialty</small></div>
+  <div class="divider"></div>
+  <div class="cols">
+    <div>
+      <h3>Dataset</h3>
+      <ul>
+        <li>1,000 patients &nbsp;·&nbsp; 50 providers</li>
+        <li>10,000 encounters</li>
+        <li>~20,000 diagnoses &nbsp;·&nbsp; ~30,000 treatments</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Indexes Created</h3>
+      <ul>
+        <li><span class="green">idx_diagnoses_code</span> on <span class="blue">diagnosis_code</span></li>
+        <li><span class="green">idx_encounters_patient_date</span> on <span class="blue">(patient_id, encounter_date)</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 4 – B-Tree Theory ══════════════════ -->
+<div class="slide" id="s4">
+  <div class="slide-num">4 / 12</div>
+  <div class="tag">Internal Focus · Diana Rulanova</div>
+  <h2>B-Tree Indexing in PostgreSQL</h2>
+  <div class="cols">
+    <div>
+      <h3>How It Works</h3>
+      <ul>
+        <li>Default index type in PostgreSQL</li>
+        <li>Balanced tree: root → internal → leaf pages</li>
+        <li>Leaf pages store <span class="blue">(key, heap TID)</span> pairs</li>
+        <li>Lookup cost: <span class="highlight">O(log n)</span> vs O(n) seq scan</li>
+      </ul>
+      <br/>
+      <h3>Planner Strategies</h3>
+      <ul>
+        <li><span class="badge badge-blue">Index Scan</span> few rows → pointer-by-pointer</li>
+        <li><span class="badge badge-yellow">Bitmap Index Scan</span> many rows → batch heap read</li>
+        <li><span class="badge badge-green">Seq Scan</span> when index won't help</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Composite Index Benefit</h3>
+      <p style="margin-bottom:10px">Index on <span class="blue">(patient_id, encounter_date)</span>:</p>
+      <div class="code">WHERE  patient_id = 50
+ORDER  BY encounter_date DESC</div>
+      <ul>
+        <li>Left prefix → filters by patient</li>
+        <li>Right column → pre-sorted order</li>
+        <li><span class="green">No extra Sort node</span> in query plan</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 5 – Op 1 Demo ══════════════════ -->
+<div class="slide" id="s5">
+  <div class="slide-num">5 / 12</div>
+  <div class="tag">Demo · Operation 1</div>
+  <h2>Diagnosis Lookup by Code</h2>
+  <div class="cols">
+    <div>
+      <h3>What the App Does</h3>
+      <p>Clinician searches all diagnoses by ICD-style code (e.g. G43 – Migraine).</p>
+      <div class="code">SELECT diagnosis_id, diagnosis_code,
+       description
+FROM   diagnoses
+WHERE  diagnosis_code = 'G43'</div>
+    </div>
+    <div>
+      <h3>What PostgreSQL Does Internally</h3>
+      <div class="explain-box">
+<span class="green">Bitmap Heap Scan</span> on diagnoses
+  Recheck Cond: diagnosis_code = 'G43'
+  Heap Blocks: exact=161
+  → <span class="green">Bitmap Index Scan</span>
+        on idx_diagnoses_code
+<span class="dim">Execution Time: 0.69 ms</span>
+      </div>
+      <div class="explain-box" style="border-left-color:#f85149;">
+<span class="red">Seq Scan</span> on diagnoses
+  Filter: diagnosis_code = 'G43'
+  Rows Removed by Filter: <span class="red">18,901</span>
+<span class="dim">Execution Time: 1.80 ms</span>
+      </div>
+    </div>
+  </div>
+  <p style="margin-top:12px"><span class="highlight">Why it matters:</span> Index reads 163 pages. Sequential scan reads every row. 2.6× faster — and the gap grows with data volume.</p>
+</div>
+
+<!-- ══════════════════ SLIDE 6 – Op 2 Demo ══════════════════ -->
+<div class="slide" id="s6">
+  <div class="slide-num">6 / 12</div>
+  <div class="tag">Demo · Operation 2</div>
+  <h2>Patient Encounter History</h2>
+  <div class="cols">
+    <div>
+      <h3>What the App Does</h3>
+      <p>Retrieve a patient's visit history, newest first.</p>
+      <div class="code">SELECT encounter_id, encounter_date,
+       chief_complaint
+FROM   encounters
+WHERE  patient_id = 50
+ORDER  BY encounter_date DESC
+LIMIT  10</div>
+    </div>
+    <div>
+      <h3>What PostgreSQL Does Internally</h3>
+      <div class="explain-box">
+<span class="green">Index Scan Backward</span>
+  using idx_encounters_patient_date
+  Index Cond: patient_id = 50
+<span class="dim">Execution Time: 0.077 ms</span>
+<span class="dim">No Sort node in plan ✓</span>
+      </div>
+      <h3 style="margin-top:14px">Why No Sort?</h3>
+      <ul>
+        <li>Composite index stores rows in <span class="blue">(patient_id, encounter_date)</span> order</li>
+        <li>Backward scan = descending date for free</li>
+        <li>PostgreSQL reads leaf pages in order — already sorted</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin-top:12px"><span class="highlight">Why it matters:</span> Composite indexes eliminate Sort nodes — critical when paginating through large encounter histories.</p>
+</div>
+
+<!-- ══════════════════ SLIDE 7 – MVCC Theory ══════════════════ -->
+<div class="slide" id="s7">
+  <div class="slide-num">7 / 12</div>
+  <div class="tag">Internal Focus · Eliza Loke</div>
+  <h2>MVCC in PostgreSQL</h2>
+  <div class="cols">
+    <div>
+      <h3>How It Works</h3>
+      <ul>
+        <li>Every row version stores <span class="blue">xmin</span> (created by) and <span class="blue">xmax</span> (deleted by)</li>
+        <li>UPDATE creates a <span class="highlight">new row version</span>, marks old one expired</li>
+        <li>Each transaction sees a <span class="green">consistent snapshot</span></li>
+        <li>Readers never block writers; writers never block readers</li>
+      </ul>
+    </div>
+    <div>
+      <h3>READ COMMITTED (default)</h3>
+      <ul>
+        <li>Each statement sees the latest committed data</li>
+        <li>No dirty reads — uncommitted data invisible</li>
+        <li>New snapshot taken at each statement start</li>
+      </ul>
+      <br/>
+      <h3>Row-Level Locking</h3>
+      <ul>
+        <li><span class="blue">SELECT FOR UPDATE</span> — exclusive row lock</li>
+        <li>Concurrent writers wait; readers are not blocked</li>
+        <li>Lock released on COMMIT / ROLLBACK</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 8 – Op 3 MVCC ══════════════════ -->
+<div class="slide" id="s8">
+  <div class="slide-num">8 / 12</div>
+  <div class="tag">Demo · Operation 3</div>
+  <h2>Concurrent Update – MVCC</h2>
+  <div class="cols">
+    <div>
+      <h3>Scenario</h3>
+      <p>Two clinical staff update the same treatment record simultaneously.</p>
+      <br/>
+      <table>
+        <tr><th>Time</th><th>Session 1</th><th>Session 2</th></tr>
+        <tr><td>t1</td><td>UPDATE outcome = 'Improved' (not committed)</td><td>—</td></tr>
+        <tr><td>t2</td><td>… waiting …</td><td>READ → sees <span class="green">'Improving'</span> (old)</td></tr>
+        <tr><td>t3</td><td>COMMIT ✓</td><td>—</td></tr>
+        <tr><td>t4</td><td>—</td><td>READ → sees <span class="yellow">'Improved'</span> (new)</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Internal Explanation</h3>
+      <ul>
+        <li>Session 1's update creates a <span class="highlight">new heap tuple</span> with xmin = S1's xid</li>
+        <li>Old tuple's xmax = S1's xid (not yet committed)</li>
+        <li>Session 2 checks visibility: S1's xid not in committed set → <span class="green">returns old version</span></li>
+        <li>After COMMIT: S1's xid is committed → <span class="yellow">new version visible</span></li>
+      </ul>
+      <br/>
+      <p><span class="highlight">Why it matters:</span> No locking, no blocking reads. Critical for healthcare apps where reads must never stall.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 9 – Op 4 Locking ══════════════════ -->
+<div class="slide" id="s9">
+  <div class="slide-num">9 / 12</div>
+  <div class="tag">Demo · Operation 4</div>
+  <h2>Row-Level Locking</h2>
+  <div class="cols">
+    <div>
+      <h3>Scenario</h3>
+      <p>A clinician locks a treatment record before updating to prevent conflicting writes.</p>
+      <div class="code">-- Session 1
+SELECT outcome FROM treatments
+WHERE treatment_id = 2
+FOR UPDATE;
+-- (holds lock 4 seconds)
+UPDATE treatments
+  SET outcome = 'Recovered'
+  WHERE treatment_id = 2;
+COMMIT;</div>
+    </div>
+    <div>
+      <h3>What Happens</h3>
+      <ul>
+        <li>Session 1 acquires <span class="highlight">exclusive row lock</span></li>
+        <li>Session 2 attempts UPDATE on same row</li>
+        <li>Session 2 <span class="red">BLOCKS</span> — waits 3.5 s</li>
+        <li>Session 1 commits → lock released</li>
+        <li>Session 2 unblocks and succeeds</li>
+      </ul>
+      <br/>
+      <h3>MVCC vs Locking</h3>
+      <ul>
+        <li>MVCC: read/write concurrency (readers don't block)</li>
+        <li>SELECT FOR UPDATE: write/write serialization</li>
+        <li>Together they cover all concurrency scenarios</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 10 – Op 5 Aggregation ══════════════════ -->
+<div class="slide" id="s10">
+  <div class="slide-num">10 / 12</div>
+  <div class="tag">Demo · Operation 5</div>
+  <h2>Monthly Diagnosis Summary</h2>
+  <div class="cols">
+    <div>
+      <h3>What the App Does</h3>
+      <p>Administrator generates monthly report of diagnosis counts.</p>
+      <div class="code">SELECT DATE_TRUNC('month',
+         e.encounter_date) AS month,
+       d.diagnosis_code,
+       COUNT(*) AS count
+FROM   diagnoses d
+JOIN   encounters e
+       ON d.encounter_id = e.encounter_id
+GROUP  BY 1, 2
+ORDER  BY month DESC, count DESC</div>
+    </div>
+    <div>
+      <h3>Query Plan</h3>
+      <div class="explain-box">
+<span class="yellow">Hash Join</span>
+  → <span class="dim">Seq Scan</span> on diagnoses (19,885 rows)
+  → <span class="dim">Hash / Seq Scan</span> on encounters
+<span class="yellow">HashAggregate</span>
+  Group Key: month, diagnosis_code
+<span class="dim">Execution Time: 25.9 ms</span>
+      </div>
+      <h3 style="margin-top:14px">Why Seq Scan Here?</h3>
+      <ul>
+        <li>Query touches <span class="highlight">all rows</span> in both tables</li>
+        <li>Index scan would add overhead with no benefit</li>
+        <li>Planner correctly chooses Seq Scan + Hash Join</li>
+        <li>Contrasts with Ops 1 &amp; 2 (selective queries)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SLIDE 11 – Comparison ══════════════════ -->
+<div class="slide" id="s11">
+  <div class="slide-num">11 / 12</div>
+  <div class="tag">Analysis</div>
+  <h2>PostgreSQL vs MySQL vs MongoDB</h2>
+  <table>
+    <tr>
+      <th>Feature</th>
+      <th>PostgreSQL</th>
+      <th>MySQL (InnoDB)</th>
+      <th>MongoDB</th>
+    </tr>
+    <tr>
+      <td>Primary index</td>
+      <td><span class="blue">Heap + secondary B-tree</span></td>
+      <td>Clustered B-tree (PK)</td>
+      <td>B-tree on _id</td>
+    </tr>
+    <tr>
+      <td>Concurrency</td>
+      <td><span class="green">MVCC (no read locks)</span></td>
+      <td>MVCC + gap locks</td>
+      <td>Document-level locking</td>
+    </tr>
+    <tr>
+      <td>Composite index</td>
+      <td><span class="green">Skip sort, prefix scan</span></td>
+      <td>Similar support</td>
+      <td>Compound indexes</td>
+    </tr>
+    <tr>
+      <td>EXPLAIN</td>
+      <td><span class="green">EXPLAIN ANALYZE + BUFFERS</span></td>
+      <td>EXPLAIN FORMAT=JSON</td>
+      <td>explain("executionStats")</td>
+    </tr>
+    <tr>
+      <td>Schema</td>
+      <td>Strict relational</td>
+      <td>Strict relational</td>
+      <td>Flexible document</td>
+    </tr>
+  </table>
+  <p style="margin-top:16px"><span class="highlight">Key difference:</span> PostgreSQL's heap storage separates table data from indexes — any column can be efficiently indexed without reorganizing the table. MySQL's clustered index means secondary index lookups always double-fetch through the PK.</p>
+</div>
+
+<!-- ══════════════════ SLIDE 12 – Conclusion ══════════════════ -->
+<div class="slide" id="s12">
+  <div class="slide-num">12 / 12</div>
+  <div class="tag">Conclusion</div>
+  <h2>Summary &amp; Lessons Learned</h2>
+  <div class="cols3">
+    <div class="card">
+      <h3>B-Tree Indexing</h3>
+      <ul>
+        <li>2.6× faster lookup with index</li>
+        <li>Bitmap scan for high-selectivity queries</li>
+        <li>Composite index eliminates Sort node</li>
+        <li>Planner chooses Seq Scan for full-table aggregations</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>MVCC</h3>
+      <ul>
+        <li>No dirty reads under READ COMMITTED</li>
+        <li>Readers and writers don't block each other</li>
+        <li>Row versioning via xmin/xmax in heap</li>
+        <li>SELECT FOR UPDATE for write serialization</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Key Insight</h3>
+      <ul>
+        <li>Every app operation maps to an internal DB behavior</li>
+        <li>Index design directly affects query plan</li>
+        <li>Dataset size determines whether index kicks in</li>
+        <li>MVCC is why PostgreSQL excels in concurrent workloads</li>
+      </ul>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <p style="text-align:center; color:#8b949e; font-size:13px;">
+    Diana Rulanova &nbsp;·&nbsp; Eliza Loke &nbsp;·&nbsp; DSCI 551 Spring 2026
+  </p>
+</div>
+
+<!-- ══════════════════ Navigation ══════════════════ -->
+<div class="nav">
+  <button onclick="go(-1)">← Prev</button>
+  <span class="hint" id="hint">Use ← → arrow keys or buttons</span>
+  <button onclick="go(1)">Next →</button>
+</div>
+
+<script>
+  let cur = 0;
+  const slides = document.querySelectorAll('.slide');
+  const total  = slides.length;
+
+  function show(n) {
+    slides[cur].classList.remove('active');
+    cur = (n + total) % total;
+    slides[cur].classList.add('active');
+  }
+  function go(d) { show(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    go(-1);
+  });
+</script>
+</body>
+</html>
